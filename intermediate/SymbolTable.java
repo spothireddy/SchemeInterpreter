@@ -1,16 +1,18 @@
 package intermediate;
 
-import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
 
 public class SymbolTable {
 
 	private TreeMap<String, SymtabEntry> symtab;
+	private int nestingCount;
+	private Node lambdaReference;
 	
-	public SymbolTable(){
+	public SymbolTable(int nestingLevel){
 		this.symtab = new TreeMap<String, SymtabEntry>();
+		this.nestingCount = nestingLevel;
+		this.lambdaReference = null;
 	}
 	
 	/**
@@ -20,6 +22,25 @@ public class SymbolTable {
 		symtab.put(t, new SymtabEntry(t));
 	}
 	
+	public int size(){
+		return symtab.size();
+	}
+	
+	public SymtabEntry getSymbEntry(String t){
+		return symtab.get(t);
+	}
+	
+	public int getNestingCount(){
+		return nestingCount;
+	}
+	
+	public void setLambdaReference(Node n){
+		lambdaReference = n;
+	}
+	
+	public Node getLambdaReference(){
+		return lambdaReference;
+	}
 	
 	/**
 	 * Print a symbol table.
@@ -27,7 +48,7 @@ public class SymbolTable {
 	 */
 	public void print()
 	{
-		System.out.println("\n==== SYMBOL TABLE ====\n");
+		System.out.println("\n==== SYMBOL TABLE ==NESTING COUNT: " + this.getNestingCount()+"==\n");
 		for (Entry<String, SymtabEntry> entry : symtab.entrySet()) {
 		    String key = entry.getKey();
 

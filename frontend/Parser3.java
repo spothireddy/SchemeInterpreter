@@ -1,23 +1,29 @@
 package frontend;
 
 import java.util.ArrayList;
-import java.util.TreeMap;
+import java.util.Stack;
+
 
 import intermediate.*;
 import backend.*;
 
 /**
  * A simple Scheme parser.
- * @author Ronald Mak
+ * @author Ronald Mak and Team LiSiSa
  */
 public class Parser3
 {
 	private Scanner scanner;
 	private ArrayList<Node> trees;
 	private ArrayList<SymbolTable> symbolTables;
-	private int stackNumPrev;
-	private int stackNumNow;
 	private SymbolTable table;
+	Stack<SymbolTable> stack;
+	private int nestedCount;
+	private int referenceID;
+	boolean addTableReference;
+	String currEntry;
+	SymbolTable symEntryTableLambdaReference;
+	SymbolTable specialReferenceTable;
 	
 	/**
 	 * Constructor.
@@ -29,11 +35,38 @@ public class Parser3
 		this.trees = new ArrayList<Node>();
 		this.symbolTables = new ArrayList<SymbolTable>();
 		SymtabEntry x = new SymtabEntry("car");
-		this.table = new SymbolTable();
+		nestedCount = 0;
+		this.table = new SymbolTable(nestedCount);
 		table.addSymbEntry("car", x);
-		stackNumPrev = 0;
-		stackNumNow = 0;
+		table.addSymbEntry("*", x);
+		stack = new Stack<SymbolTable>();
+		referenceID = 0;
+		addTableReference = false;
+		currEntry = "";
+		for(SymbolTable s : symbolTables){
+			if(s.getNestingCount() == 2){
+				
+			}
+			
+		}
+		
+		
+		
 	}
+	
+	
+	public int getReferenceID(){
+		for(int i = referenceID; i < symbolTables.size(); i++){
+			if(symbolTables.get(i).getNestingCount() == 2){
+				return i;
+			}
+			else{
+				return 0;
+			}
+		}
+			return 0;
+	}
+	
 	/**
 	 * The parse method.
 	 * This version also builds parse trees.
@@ -50,14 +83,25 @@ public class Parser3
 				trees.add(parseList());
 			}
 		}
-		symbolTables.add(table);
+		stack.push(table);
+		while(!stack.empty()){
+			symbolTables.add(stack.pop());
+		}
 		// Print the symbol table.
 		SymbolTablePrinter symtabPrinter = new SymbolTablePrinter();
 		symtabPrinter.printScopes(symbolTables);
 		
 		// Print the parse trees.
 		TreePrinter treePrinter = new TreePrinter();
-		for (Node tree : trees) treePrinter.print(tree);
+		for (Node tree : trees){
+			treePrinter.print(tree);
+			
+		}
+		
+		
+		
+		
+		
 	}
 	
 	/**
@@ -68,35 +112,12 @@ public class Parser3
 	private Token nextToken()
 	{
 		Token token = scanner.nextToken();
-		TokenType tokenType = token.getType();
-		if(token.getText() != null && (token.getText().equals("define") 
-				|| token.getText().equals("lambda") || token.getText().equals("let")
-				|| token.getText().equals("letrec") || token.getText().equals("let*")) ){
-			stackNumNow = stackNumNow + 1;
-		}
 		
-		// Enter identifiers and symbols into the symbol table.
-		if ((tokenType == TokenType.IDENTIFIER) ||
-			(tokenType == TokenType.SYMBOL)) 
-		{
-			String text = token.getText();
-			this.addToSymbolTable(text);
-		}
 		
 		return token;
 	}
 	
-	public void addToSymbolTable(String text){
-		if(stackNumNow != stackNumPrev){
-			symbolTables.add(table);
-			stackNumPrev = stackNumNow;
-			table = new SymbolTable();
-		}
-		SymtabEntry x = new SymtabEntry(text);
-		table.addSymbEntry(text, x);
-
-		
-	}
+	
 	
 	/**
 	 * Parse a list and build a parse tree.
@@ -107,12 +128,48 @@ public class Parser3
 		Node root = new Node();
 		Node currentNode = null;
 		
+		
 		// Get the first token after the opening left parenthesis.
 		Token token = nextToken();
 		TokenType tokenType = token.getType();
 		
 		// Loop to get tokens until the closing right parenthesis.
 		while (tokenType != TokenType.SS_RPAREN) {
+			
+			
+			
+			if(token.getText() != null && (token.getText().equals("define"))){
+				nestedCount = 1;
+				stack.push(table);
+				System.out.println("*******************PUSHED TABLEvFROM DEFINE********");
+				while(stack.size() > 2){
+					symbolTables.add(stack.pop());
+				}
+				
+				if(stack.size() == 2){
+					table = stack.pop();
+				}
+				else if(stack.size() == 1){
+					table = new SymbolTable(nestedCount);
+				}
+				
+				
+				
+			}
+			
+			if(token.getText() != null && (token.getText().equals("lambda") || token.getText().equals("let")
+					|| token.getText().equals("letrec") || token.getText().equals("let*")) ){
+				
+				if(token.getText().equals("lambda")){
+					symEntryTableLambdaReference = table;
+				}
+				stack.push(table);
+				System.out.println("*******************PUSHED TABLE********");
+				nestedCount = nestedCount + 1;
+				table = new SymbolTable(nestedCount);
+				specialReferenceTable = table;
+				
+			}
 			
 			// Set currentNode initially to the root,
 			// then move it down the cdr links.
@@ -123,6 +180,23 @@ public class Parser3
 				Node newNode = new Node();
 				currentNode.setCdr(newNode);
 				currentNode = newNode;
+		
+				
+				
+			}
+			
+			
+			// Enter identifiers and symbols into the symbol table.
+			if ((tokenType == TokenType.IDENTIFIER) ||
+				(tokenType == TokenType.SYMBOL)) 
+			{
+				String text = token.getText();
+				SymtabEntry x = new SymtabEntry(text);
+				table.addSymbEntry(text, x);
+				
+				//System.out.println("SIZeeEEE: " + symTabLambdaReference.size());
+				System.out.println("ADDED symbol to table********************* ::       "+ text);
+				//System.out.println("SIZeeEEE: " + symTabLambdaReference.size());
 			}
 			
 			// Left parenthesis: Parse a sublist and return the root
@@ -130,15 +204,50 @@ public class Parser3
 			// Otherwise, set the token as the data of the current node.
 			if (tokenType == TokenType.SS_LPAREN) {
 				currentNode.setCar(parseList());
+		
 			}
 			else {
 				currentNode.setToken(token);
+				
+				if(addTableReference){
+					
+					//currentNode.setReference(table.getSymbEntry(currentNode.getToken().getText()));
+					currEntry = currentNode.getToken().getText();
+					//System.out.println("__________StuPID SHIt: "+ currentNode.getToken().getText());
+					
+					currentNode.setTableReference(table);
+					addTableReference = false;
+					//System.out.println("+++++++++++++++++++++++++++++++++++++++++++++Added reference");
+				}
+				if(currentNode.getToken().getText().equals("lambda")){
+					SymtabEntry x = table.getSymbEntry(currEntry);
+					//System.out.println("__________StuPID SHIt LMABDA: "+ symTabLambdaReference.size());
+					//System.out.println("__________StuPID SHIt LMABDA: "+ currentNode.getToken().getText());
+					symEntryTableLambdaReference.getSymbEntry(currEntry).setLambdaReference(currentNode);
+					currentNode.setEntryReferecne(symEntryTableLambdaReference.getSymbEntry(currEntry));
+					//System.out.println("SET THE REFERENCE FOR LABDA **********************" + 					symTabLambdaReference.getSymbEntry(currEntry).getName());
+				}
+				if(currentNode.getToken().getText().equals("lambda") || currentNode.getToken().getText().equals("let")
+						|| currentNode.getToken().getText().equals("letrec") || currentNode.getToken().getText().equals("let*")){
+					currentNode.setTableReference(specialReferenceTable);
+				}
+				if(currentNode != null && currentNode.getToken().getText().equals("define")){
+					System.out.println("------------------------------------IT IS EQUAL TO DEFINE BEFORE-------------------");
+					addTableReference = true;
+				}
+				//if(currentNode != null && currentNode.getToken().getText().equals("lambda")){
+					//System.out.println("------------------------------------IT IS EQUAL TO LAMBDA-------------------");
+					//table.setLambdaReference(currentNode);
+				//}
+				
 			}
 			
 			// Get the next token for the next time around the loop.
 			token = nextToken();
 			tokenType = token.getType();
 		}
+		
+		
 		
 		return root;  // of the parse tree
 	}

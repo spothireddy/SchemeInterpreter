@@ -38,10 +38,34 @@ public class TreePrinter
 		// Loop and print until we fall off the bottom of the tree.
 		while (currentNode != null) {
 			Node car = currentNode.getCar();
-			
 			// Recursively print a car (left) subtree.
 			if (car != null) {
+				if(car.getToken() != null && car.getToken().getText().equals("lambda")){
+					System.out.println("****************************LAMBDA FROM TREE PRINT");
+					if(car.getEntryReferecne() != null){
+						SymtabEntry j = car.getEntryReferecne();
+						j.setLambdaReference(currentNode);
+						car.setEntryReferecne(null);
+					}
+				}
+				
+				if(car.getToken() != null && (car.getToken().getText().equals("lambda")
+						|| car.getToken().getText().equals("let") || car.getToken().getText().equals("letrec")
+						|| car.getToken().getText().equals("let*"))){
+					if(car.getTableReference() != null){
+						if(currentNode.getTableReference() == null)
+							System.out.println("NO REFERENCE");
+						SymbolTable table = car.getTableReference();
+						currentNode.setTableReference(table);
+						car.setTableReference(null);
+						currentNode.getTableReference().print();
+						if(currentNode.getTableReference() != null)
+							System.out.println("YES REFERENCE");
+
+					}
+				}
 				printList(car, nestingLevel+1);
+				
 			}
 			
 			// Print a token.
