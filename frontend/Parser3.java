@@ -24,6 +24,11 @@ public class Parser3
 	String currEntry;
 	SymbolTable symEntryTableLambdaReference;
 	SymbolTable specialReferenceTable;
+	SymbolTable globalTable;
+	
+	public Parser3(){
+		
+	}
 	
 	/**
 	 * Constructor.
@@ -39,10 +44,17 @@ public class Parser3
 		this.table = new SymbolTable(nestedCount);
 		table.addSymbEntry("car", x);
 		table.addSymbEntry("*", x);
+		table.addSymbEntry("+", x);
+		table.addSymbEntry("cdr", x);
+		table.addSymbEntry("equal?", x);
+		table.addSymbEntry("null?", x);
+
+
 		stack = new Stack<SymbolTable>();
 		referenceID = 0;
 		addTableReference = false;
 		currEntry = "";
+		globalTable = table;
 		for(SymbolTable s : symbolTables){
 			if(s.getNestingCount() == 2){
 				
@@ -54,19 +66,16 @@ public class Parser3
 		
 	}
 	
-	
-	public int getReferenceID(){
-		for(int i = referenceID; i < symbolTables.size(); i++){
-			if(symbolTables.get(i).getNestingCount() == 2){
-				return i;
-			}
-			else{
-				return 0;
-			}
-		}
-			return 0;
+	public ArrayList<SymbolTable> getSymbolTables(){
+		return symbolTables;
 	}
 	
+	public SymbolTable getGlobalTable(){
+		return symbolTables.get(symbolTables.size() - 1);
+	}
+	
+	
+
 	/**
 	 * The parse method.
 	 * This version also builds parse trees.
@@ -87,16 +96,18 @@ public class Parser3
 		while(!stack.empty()){
 			symbolTables.add(stack.pop());
 		}
-		// Print the symbol table.
-		SymbolTablePrinter symtabPrinter = new SymbolTablePrinter();
-		symtabPrinter.printScopes(symbolTables);
+		
 		
 		// Print the parse trees.
 		TreePrinter treePrinter = new TreePrinter();
 		for (Node tree : trees){
 			treePrinter.print(tree);
-			
+			//treePrinter.printScopSymbolTable();
 		}
+		
+		// Print the symbol table.
+				SymbolTablePrinter symtabPrinter = new SymbolTablePrinter();
+				symtabPrinter.printScopes(symbolTables);
 		
 		
 		
@@ -170,6 +181,7 @@ public class Parser3
 				specialReferenceTable = table;
 				
 			}
+
 			
 			// Set currentNode initially to the root,
 			// then move it down the cdr links.
@@ -185,17 +197,25 @@ public class Parser3
 				
 			}
 			
+			if(tokenType == TokenType.SYMBOL){
+				
+			}
+			
 			
 			// Enter identifiers and symbols into the symbol table.
-			if ((tokenType == TokenType.IDENTIFIER) ||
-				(tokenType == TokenType.SYMBOL)) 
+			if ((tokenType == TokenType.IDENTIFIER && stack.get(0).getSymbEntry(token.getText()) == null)) 
 			{
-				String text = token.getText();
-				SymtabEntry x = new SymtabEntry(text);
-				table.addSymbEntry(text, x);
+				if(stack.size() > 1 && stack.get(1).getSymbEntry(token.getText()) != null){
+					
+				}else{
+					String text = token.getText();
+					SymtabEntry x = new SymtabEntry(text);
+					table.addSymbEntry(text, x);
+				}
+				
 				
 				//System.out.println("SIZeeEEE: " + symTabLambdaReference.size());
-				System.out.println("ADDED symbol to table********************* ::       "+ text);
+				//System.out.println("ADDED symbol to table********************* ::       "+ text);
 				//System.out.println("SIZeeEEE: " + symTabLambdaReference.size());
 			}
 			
@@ -214,8 +234,8 @@ public class Parser3
 					//currentNode.setReference(table.getSymbEntry(currentNode.getToken().getText()));
 					currEntry = currentNode.getToken().getText();
 					//System.out.println("__________StuPID SHIt: "+ currentNode.getToken().getText());
-					
-					currentNode.setTableReference(table);
+					SymtabEntry x = table.getSymbEntry(currEntry);
+					currentNode.setEntryReferecne(x);
 					addTableReference = false;
 					//System.out.println("+++++++++++++++++++++++++++++++++++++++++++++Added reference");
 				}
@@ -234,6 +254,31 @@ public class Parser3
 				if(currentNode != null && currentNode.getToken().getText().equals("define")){
 					System.out.println("------------------------------------IT IS EQUAL TO DEFINE BEFORE-------------------");
 					addTableReference = true;
+				}
+				if(currentNode != null && currentNode.getToken().getType().equals(TokenType.SYMBOL) || stack.get(0).getSymbEntry(currentNode.getToken().getText()) != null){
+					System.out.println("------------------------------------SHIT IN TABLE GLOBAL");
+					SymbolTable global = stack.get(0);
+					SymtabEntry e = global.getSymbEntry(currentNode.getToken().getText());
+					currentNode.setEntryReferecne(e);
+					
+					
+					
+				}
+				if(currentNode != null && currentNode.getToken().getType().equals(TokenType.IDENTIFIER)){
+					
+					if(stack.size() > 1){
+						//System.out.println("STACK SIZEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE: " + stack.size());
+						SymbolTable methods = stack.get(1);
+						SymtabEntry e = methods.getSymbEntry(currentNode.getToken().getText());
+						if(e != null){
+							//System.out.println("THIS IS IN THE FIRST THING&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+							currentNode.setEntryReferecne(e);
+						}
+					}
+					
+					
+					
+					
 				}
 				//if(currentNode != null && currentNode.getToken().getText().equals("lambda")){
 					//System.out.println("------------------------------------IT IS EQUAL TO LAMBDA-------------------");

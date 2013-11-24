@@ -1,3 +1,10 @@
+(define add
+	(lambda (a b)
+		(+ a b)))
+
+(add 2 3)
+
+
 
 (define proc
   (lambda (a b)

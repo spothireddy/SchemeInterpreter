@@ -4,7 +4,7 @@ package intermediate;
  * Schemer symbol table entry.
  * @author Ronald Mak and Team LiSiSa
  */
-public class SymtabEntry 
+public class SymtabEntry
 {
 	private String name;
 	private Node lambdaReference;
@@ -16,7 +16,7 @@ public class SymtabEntry
 	public SymtabEntry(String name)
 	{
 		this.name = name;
-		
+		lambdaReference = null;
 	}
 	
 	public void setLambdaReference(Node n){
@@ -34,5 +34,7 @@ public class SymtabEntry
 		return lambdaReference;
 	}
 	
+
+
 
 }

@@ -2,6 +2,7 @@ package intermediate;
 
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.Comparator;
 
 public class SymbolTable {
 
@@ -13,6 +14,12 @@ public class SymbolTable {
 		this.symtab = new TreeMap<String, SymtabEntry>();
 		this.nestingCount = nestingLevel;
 		this.lambdaReference = null;
+	}
+	
+	public void deleteSymbolEntry(String entry){
+		SymtabEntry x = symtab.get(entry);
+		symtab.remove(this.getSymbEntry(entry).getName());
+		
 	}
 	
 	/**
