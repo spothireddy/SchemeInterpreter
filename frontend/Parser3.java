@@ -109,8 +109,13 @@ public class Parser3
 				SymbolTablePrinter symtabPrinter = new SymbolTablePrinter();
 				symtabPrinter.printScopes(symbolTables);
 		
+				for (Node tree : trees){
+					treePrinter.print(tree);
+					//treePrinter.printScopSymbolTable();
+				}
 		
-		
+				
+				symtabPrinter.printScopes(symbolTables);
 		
 		
 	}
